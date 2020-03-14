@@ -171,6 +171,25 @@ class TestTemplate(unittest.TestCase):
         self.assertEqual(tokens[13], Token(TokenType.VARIABLE_END, "}}"))
         self.assertEqual(tokens[14], Token(TokenType.DATA, "</html>"))
 
+    def test_tokenize__calculate(self):
+        tmpl = Template("")
+
+        tokens = tmpl.tokenize("{{ 1 + 2 - num1 * num2 / num3 % num4 }}")
+        self.assertEqual(len(tokens), 13)
+        self.assertEqual(tokens[0], Token(TokenType.VARIABLE_BEGIN, "{{"))
+        self.assertEqual(tokens[1], Token(TokenType.INTEGER, "1"))
+        self.assertEqual(tokens[2], Token(TokenType.ADD, "+"))
+        self.assertEqual(tokens[3], Token(TokenType.INTEGER, "2"))
+        self.assertEqual(tokens[4], Token(TokenType.SUB, "-"))
+        self.assertEqual(tokens[5], Token(TokenType.NAME, "num1"))
+        self.assertEqual(tokens[6], Token(TokenType.MUL, "*"))
+        self.assertEqual(tokens[7], Token(TokenType.NAME, "num2"))
+        self.assertEqual(tokens[8], Token(TokenType.DIV, "/"))
+        self.assertEqual(tokens[9], Token(TokenType.NAME, "num3"))
+        self.assertEqual(tokens[10], Token(TokenType.MOD, "%"))
+        self.assertEqual(tokens[11], Token(TokenType.NAME, "num4"))
+        self.assertEqual(tokens[12], Token(TokenType.VARIABLE_END, "}}"))
+
     def test_tokenize__newline(self):
         tmpl = Template("")
         tokens = tmpl.tokenize("<html>\n{{ dummy }}\n</html>")
