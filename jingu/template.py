@@ -306,6 +306,7 @@ class TokenType(Enum):
     DIV = 13
     MOD = 14
 
+
 class Token(object):
     def __init__(self, token_type, value):
         if token_type not in TokenType:
