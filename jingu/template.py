@@ -25,6 +25,11 @@ class Template(object):
     INTEGER_PATTERN = re.compile(r"[0-9]+")
     STRING_PATTERN = re.compile(r"'(.*?)'|\"(.*?)\"")
     DOT_PATTERN = re.compile(r"\.")
+    ADD_PATTERN = re.compile(r"\+")
+    SUB_PATTERN = re.compile(r"-")
+    MUL_PATTERN = re.compile(r"\*")
+    DIV_PATTERN = re.compile(r"/")
+    MOD_PATTERN = re.compile(r"%")
 
     def __init__(self, source):
         self.source = source
