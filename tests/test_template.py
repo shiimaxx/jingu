@@ -71,10 +71,15 @@ class TestTemplate(unittest.TestCase):
                 expected = s[1]
                 self.assertEqual(actual, expected)
 
-    @unittest.skip("TODO")
     def test_render__calculate_with_more_values(self):
         for s in [
-            ("1 + 1 + 1 = {{ 1 + 1 + 1 }}", "1 + 1 + 1 = 3"),
+            ("1 + 2 + 3 = {{ 1 + 2 + 3 }}", "1 + 2 + 3 = 6"),
+            ("1 + 2 - 3 = {{ 1 + 2 - 3 }}", "1 + 2 - 3 = 0"),
+            ("1 + 2 - 3 + 4 = {{ 1 + 2 - 3 + 4 }}", "1 + 2 - 3 + 4 = 4"),
+            # TODO: Implement order of operations
+            # ("1 + 2 * 3 = {{ 1 + 2 * 3 }}", "1 + 2 * 3 = 7"),
+            # ("1 + 2 / 4 = {{ 1 + 2 / 4 }}", "1 + 2 / 4 = 1.5"),
+            # ("1 + 2 % 5 = {{ 1 + 2 % 5 }}", "1 + 2 % 5 = 3"),
         ]:
             with self.subTest(s=s):
                 tmpl = Template(s[0])
@@ -345,3 +350,28 @@ class TestTemplate(unittest.TestCase):
         self.assertEqual(actual[2].op, "+")
         self.assertIsInstance(actual[2].left, ConstNode)
         self.assertIsInstance(actual[2].right, ConstNode)
+
+    def test_parse__calculate_with_more_values(self):
+        tmpl = Template("")
+
+        tokens = [
+            Token(TokenType.VARIABLE_BEGIN, "{{"),
+            Token(TokenType.INTEGER, "1"),
+            Token(TokenType.ADD, "+"),
+            Token(TokenType.INTEGER, "2"),
+            Token(TokenType.SUB, "-"),
+            Token(TokenType.INTEGER, "3"),
+            Token(TokenType.VARIABLE_END, "}}"),
+        ]
+        actual = tmpl.parse(tokens)
+        self.assertIsInstance(actual[0], RootNode)
+        self.assertIsInstance(actual[1], SkipNode)
+        self.assertIsInstance(actual[2], CalcNode)
+
+        self.assertEqual(actual[2].op, "-")
+        self.assertIsInstance(actual[2].left, CalcNode)
+        self.assertIsInstance(actual[2].right, ConstNode)
+
+        self.assertEqual(actual[2].left.op, "+")
+        self.assertIsInstance(actual[2].left.left, ConstNode)
+        self.assertIsInstance(actual[2].left.right, ConstNode)

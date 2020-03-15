@@ -344,8 +344,6 @@ class Template(object):
                     if t.token_type == TokenType.VARIABLE_END:
                         nodes.append(SkipNode(t.value))
                         break
-                    else:
-                        raise ParseError()
 
             i += 1
             if i >= len(tokens):
@@ -453,9 +451,17 @@ class CalcNode(Node):
         self.left = left
         self.right = right
 
-    def visit(self):
-        left = int(self.left.value)
-        right = int(self.right.value)
+    @property
+    def result(self):
+        if isinstance(self.left, CalcNode):
+            left = self.left.result
+        else:
+            left = int(self.left.value)
+
+        if isinstance(self.right, CalcNode):
+            right = self.right.result
+        else:
+            right = int(self.right.value)
 
         if self.op == "+":
             result = left + right
@@ -468,4 +474,7 @@ class CalcNode(Node):
         if self.op == "%":
             result = left % right
 
-        return f"    yield '{result}'\n"
+        return result
+
+    def visit(self):
+        return f"    yield '{self.result}'\n"
