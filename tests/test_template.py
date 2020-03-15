@@ -71,6 +71,28 @@ class TestTemplate(unittest.TestCase):
                 expected = s[1]
                 self.assertEqual(actual, expected)
 
+    @unittest.skip("TODO")
+    def test_render__calculate_with_more_values(self):
+        for s in [
+            ("1 + 1 + 1 = {{ 1 + 1 + 1 }}", "1 + 1 + 1 = 3"),
+        ]:
+            with self.subTest(s=s):
+                tmpl = Template(s[0])
+                actual = tmpl.render()
+                expected = s[1]
+                self.assertEqual(actual, expected)
+
+    @unittest.skip("TODO")
+    def test_render__calculate_with_variables(self):
+        for s in [
+            ("1 + n = {{ 1 + n }}", 2, "1 + 2 = 3")
+        ]:
+            with self.subTest(s=s):
+                tmpl = Template(s[0])
+                actual = tmpl.render(n=s[1])
+                expected = s[2]
+                self.assertEqual(actual, expected)
+
     def test_tokenize__variable(self):
         tmpl = Template("")
         self.assertEqual(tmpl.tokenize("test"), [Token(TokenType.DATA, "test")])
