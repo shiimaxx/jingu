@@ -291,6 +291,54 @@ class Template(object):
                         else:
                             nodes.append(NameNode(t.value))
                             i += 1
+                    elif t.token_type == TokenType.INTEGER:
+                        nodes.append(ConstNode(t.value))
+                        i += 1
+
+                    t = tokens[i]
+
+                    if t.token_type in [TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV, TokenType.MOD]:
+                        left = nodes.pop()
+                        op = t.value
+
+                        right = None
+                        i = i + 1
+                        t = tokens[i]
+                        if t.token_type == TokenType.NAME:
+                            j = i + 1
+                            if tokens[j].token_type == TokenType.LBRACKET:
+                                j += 1
+                                next_t = tokens[j]
+                                if next_t.token_type not in (TokenType.INTEGER, TokenType.STRING):
+                                    raise ParseError()
+                                index = next_t.value
+
+                                j += 1
+                                next_t = tokens[j]
+                                if next_t.token_type != TokenType.RBRACKET:
+                                    raise ParseError()
+                                right = GetNode(t.value, index)
+                                j += 1
+
+                                i = j
+                            elif tokens[j].token_type == TokenType.DOT:
+                                j += 1
+                                next_t = tokens[j]
+                                if next_t.token_type != TokenType.NAME:
+                                    raise ParseError()
+                                index = next_t.value
+                                right = GetNode(t.value, index)
+                                j += 1
+
+                                i = j
+                            else:
+                                right = NameNode(t.value)
+                                i += 1
+                        elif t.token_type == TokenType.INTEGER:
+                            right = ConstNode(t.value)
+                            i += 1
+
+                        nodes.append(CalcNode(op, left, right))
 
                     t = tokens[i]
                     if t.token_type == TokenType.VARIABLE_END:
@@ -390,3 +438,34 @@ class GetNode(Node):
             return f"    yield {self.value}[{self.index}]\n"
         else:
             return f"    yield {self.value}['{self.index}']\n"
+
+
+class ConstNode(Node):
+
+    def __init__(self, value):
+        self.value = value
+
+
+class CalcNode(Node):
+
+    def __init__(self, op, left, right):
+        self.op = op
+        self.left = left
+        self.right = right
+
+    def visit(self):
+        left = int(self.left.value)
+        right = int(self.right.value)
+
+        if self.op == "+":
+            result = left + right
+        if self.op == "-":
+            result = left - right
+        if self.op == "*":
+            result = left * right
+        if self.op == "/":
+            result = left / right
+        if self.op == "%":
+            result = left % right
+
+        return f"    yield '{result}'\n"

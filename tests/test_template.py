@@ -1,6 +1,6 @@
 import unittest
 
-from jingu.template import Environment, Template, Token, TokenType, NameNode, DataNode, GetNode, RootNode, SkipNode
+from jingu.template import Environment, Template, Token, TokenType, NameNode, DataNode, GetNode, RootNode, SkipNode, CalcNode, ConstNode
 
 
 class TestEnvironment(unittest.TestCase):
@@ -56,6 +56,20 @@ class TestTemplate(unittest.TestCase):
         actual = tmpl.render(person={'name': 'John Doe'})
         expected = "Hello John Doe!"
         self.assertEqual(actual, expected)
+
+    def test_render__calculate(self):
+        for s in [
+            ("1 + 1 = {{ 1 + 1 }}", "1 + 1 = 2"),
+            ("1 - 1 = {{ 1 - 1 }}", "1 - 1 = 0"),
+            ("2 * 2 = {{ 2 * 2 }}", "2 * 2 = 4"),
+            ("4 / 2 = {{ 4 / 2 }}", "4 / 2 = 2.0"),
+            ("5 % 2 = {{ 5 % 2 }}", "5 % 2 = 1"),
+        ]:
+            with self.subTest(s=s):
+                tmpl = Template(s[0])
+                actual = tmpl.render()
+                expected = s[1]
+                self.assertEqual(actual, expected)
 
     def test_tokenize__variable(self):
         tmpl = Template("")
@@ -290,3 +304,22 @@ class TestTemplate(unittest.TestCase):
         self.assertIsInstance(actual[3], GetNode)
         self.assertIsInstance(actual[4], SkipNode)
         self.assertIsInstance(actual[5], DataNode)
+
+    def test_parse__calculate(self):
+        tmpl = Template("")
+
+        tokens = [
+            Token(TokenType.VARIABLE_BEGIN, "{{"),
+            Token(TokenType.INTEGER, "1"),
+            Token(TokenType.ADD, "+"),
+            Token(TokenType.INTEGER, "2"),
+            Token(TokenType.VARIABLE_END, "}}"),
+        ]
+        actual = tmpl.parse(tokens)
+        self.assertIsInstance(actual[0], RootNode)
+        self.assertIsInstance(actual[1], SkipNode)
+        self.assertIsInstance(actual[2], CalcNode)
+
+        self.assertEqual(actual[2].op, "+")
+        self.assertIsInstance(actual[2].left, ConstNode)
+        self.assertIsInstance(actual[2].right, ConstNode)
