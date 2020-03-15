@@ -57,7 +57,6 @@ class TestTemplate(unittest.TestCase):
         expected = "Hello John Doe!"
         self.assertEqual(actual, expected)
 
-
     def test_tokenize__variable(self):
         tmpl = Template("")
         self.assertEqual(tmpl.tokenize("test"), [Token(TokenType.DATA, "test")])

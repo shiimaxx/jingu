@@ -254,35 +254,51 @@ class Template(object):
             t = tokens[i]
             if t.token_type == TokenType.DATA:
                 nodes.append(DataNode(t.value))
-            elif t.token_type in [TokenType.VARIABLE_BEGIN, TokenType.VARIABLE_END]:
+            elif t.token_type == TokenType.VARIABLE_BEGIN:
                 nodes.append(SkipNode(t.value))
-            elif t.token_type == TokenType.NAME:
-                j = i + 1
-                if tokens[j].token_type == TokenType.LBRACKET:
-                    j += 1
-                    next_t = tokens[j]
-                    if next_t.token_type not in (TokenType.INTEGER, TokenType.STRING):
-                        raise ParseError()
-                    index = next_t.value
+                i += 1
 
-                    j += 1
-                    next_t = tokens[j]
-                    if next_t.token_type != TokenType.RBRACKET:
-                        raise ParseError()
-                    nodes.append(GetNode(t.value, index))
+                while True:
+                    t = tokens[i]
 
-                    i = j
-                elif tokens[j].token_type == TokenType.DOT:
-                    j += 1
-                    next_t = tokens[j]
-                    if next_t.token_type != TokenType.NAME:
-                        raise ParseError()
-                    index = next_t.value
-                    nodes.append(GetNode(t.value, index))
+                    if t.token_type == TokenType.NAME:
+                        j = i + 1
+                        if tokens[j].token_type == TokenType.LBRACKET:
+                            j += 1
+                            next_t = tokens[j]
+                            if next_t.token_type not in (TokenType.INTEGER, TokenType.STRING):
+                                raise ParseError()
+                            index = next_t.value
 
-                    i = j
-                else:
-                    nodes.append(NameNode(t.value))
+                            j += 1
+                            next_t = tokens[j]
+                            if next_t.token_type != TokenType.RBRACKET:
+                                raise ParseError()
+                            nodes.append(GetNode(t.value, index))
+                            j += 1
+
+                            i = j
+                        elif tokens[j].token_type == TokenType.DOT:
+                            j += 1
+                            next_t = tokens[j]
+                            if next_t.token_type != TokenType.NAME:
+                                raise ParseError()
+                            index = next_t.value
+                            nodes.append(GetNode(t.value, index))
+                            j += 1
+
+                            i = j
+                        else:
+                            nodes.append(NameNode(t.value))
+                            i += 1
+
+                    t = tokens[i]
+                    if t.token_type == TokenType.VARIABLE_END:
+                        nodes.append(SkipNode(t.value))
+                        break
+                    else:
+                        raise ParseError()
+
             i += 1
             if i >= len(tokens):
                 break
