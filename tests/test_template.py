@@ -89,7 +89,9 @@ class TestTemplate(unittest.TestCase):
 
     def test_render__calculate_with_variables(self):
         for s in [
-            ("1 + n = {{ 1 + n }}", 2, "1 + n = 3")
+            ("1 + n = {{ 1 + n }}", 2, "1 + n = 3"),
+            # TODO:
+            # ("1 + n + n = {{ 1 + n + n }}", 2, "1 + n + n = 5")
         ]:
             with self.subTest(s=s):
                 tmpl = Template(s[0])
