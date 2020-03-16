@@ -477,4 +477,18 @@ class CalcNode(Node):
         return result
 
     def visit(self):
-        return f"    yield '{self.result}'\n"
+        if isinstance(self.left, CalcNode):
+            left = self.left.result
+        elif isinstance(self.left, NameNode):
+            left = self.left.value
+        else:
+            left = int(self.left.value)
+
+        if isinstance(self.right, CalcNode):
+            right = self.right.result
+        elif isinstance(self.right, NameNode):
+            right = self.right.value
+        else:
+            right = int(self.right.value)
+
+        return f"    yield str({left} {self.op} {right})\n"

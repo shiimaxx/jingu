@@ -87,10 +87,9 @@ class TestTemplate(unittest.TestCase):
                 expected = s[1]
                 self.assertEqual(actual, expected)
 
-    @unittest.skip("TODO")
     def test_render__calculate_with_variables(self):
         for s in [
-            ("1 + n = {{ 1 + n }}", 2, "1 + 2 = 3")
+            ("1 + n = {{ 1 + n }}", 2, "1 + n = 3")
         ]:
             with self.subTest(s=s):
                 tmpl = Template(s[0])
