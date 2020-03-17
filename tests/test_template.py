@@ -1,3 +1,4 @@
+from collections import namedtuple
 import unittest
 
 from jingu.template import Environment, Template, Token, TokenType, NameNode, DataNode, GetNode, RootNode, SkipNode, CalcNode, ConstNode
@@ -88,15 +89,19 @@ class TestTemplate(unittest.TestCase):
                 self.assertEqual(actual, expected)
 
     def test_render__calculate_with_variables(self):
-        for s in [
-            ("1 + n = {{ 1 + n }}", 2, "1 + n = 3"),
-            # TODO:
-            # ("1 + n + n = {{ 1 + n + n }}", 2, "1 + n + n = 5")
+        Case = namedtuple("Case", ["tmpl", "expected", "n", "m"])
+        for c in [
+            Case("1 + n = {{ 1 + n }}", "1 + n = 3", 2, None),
+            Case("1 + n + m = {{ 1 + n + m }}", "1 + n + m = 6", 2, 3),
+            Case("1 + n - m = {{ 1 + n - m }}", "1 + n - m = 5", 9, 5),
+            Case("2 * n = {{ 2 * n }}", "2 * n = 10", 5, None),
+            Case("2 * n * m = {{ 2 * n * m }}", "2 * n * m = 60", 5, 6),
+            Case("2 * n / m = {{ 2 * n / m }}", "2 * n / m = 4.0", 10, 5)
         ]:
-            with self.subTest(s=s):
-                tmpl = Template(s[0])
-                actual = tmpl.render(n=s[1])
-                expected = s[2]
+            with self.subTest(c=c):
+                tmpl = Template(c.tmpl)
+                actual = tmpl.render(n=c.n, m=c.m)
+                expected = c.expected
                 self.assertEqual(actual, expected)
 
     def test_tokenize__variable(self):

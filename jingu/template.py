@@ -452,40 +452,33 @@ class CalcNode(Node):
         self.right = right
 
     @property
-    def result(self):
+    def expand(self):
         if isinstance(self.left, CalcNode):
-            left = self.left.result
-        else:
-            left = int(self.left.value)
-
-        if isinstance(self.right, CalcNode):
-            right = self.right.result
-        else:
-            right = int(self.right.value)
-
-        if self.op == "+":
-            result = left + right
-        if self.op == "-":
-            result = left - right
-        if self.op == "*":
-            result = left * right
-        if self.op == "/":
-            result = left / right
-        if self.op == "%":
-            result = left % right
-
-        return result
-
-    def visit(self):
-        if isinstance(self.left, CalcNode):
-            left = self.left.result
+            left = self.left.expand
         elif isinstance(self.left, NameNode):
             left = self.left.value
         else:
             left = int(self.left.value)
 
         if isinstance(self.right, CalcNode):
-            right = self.right.result
+            right = self.right.expand
+        elif isinstance(self.right, NameNode):
+            right = self.right.value
+        else:
+            right = int(self.right.value)
+
+        return f"{left} {self.op} {right}"
+
+    def visit(self):
+        if isinstance(self.left, CalcNode):
+            left = self.left.expand
+        elif isinstance(self.left, NameNode):
+            left = self.left.value
+        else:
+            left = int(self.left.value)
+
+        if isinstance(self.right, CalcNode):
+            right = self.right.expand
         elif isinstance(self.right, NameNode):
             right = self.right.value
         else:
