@@ -106,6 +106,17 @@ class TestTemplate(unittest.TestCase):
                 expected = c.expected
                 self.assertEqual(actual, expected)
 
+    def test_render__if(self):
+        for c in [
+            ("Hello{% if True %} John Doe!{% endif %}", "Hello John Doe!"),
+            ("Hello{% if False %} John Doe!{% endif %}", "Hello"),
+        ]:
+            with self.subTest(c=c):
+                tmpl = Template(c[0])
+                actual = tmpl.render()
+                expected = c[1]
+                self.assertEqual(actual, expected)
+
     def test_tokenize__variable(self):
         tmpl = Template("")
         self.assertEqual(tmpl.tokenize("test"), [Token(TokenType.DATA, "test")])
@@ -237,6 +248,22 @@ class TestTemplate(unittest.TestCase):
         self.assertEqual(tokens[10], Token(TokenType.MOD, "%"))
         self.assertEqual(tokens[11], Token(TokenType.NAME, "num4"))
         self.assertEqual(tokens[12], Token(TokenType.VARIABLE_END, "}}"))
+
+    def test_tokenize__if(self):
+        tmpl = Template("")
+
+        tokens = tmpl.tokenize("""{% if True %}
+John Doe!
+{% endif %}""")
+        self.assertEqual(len(tokens), 8)
+        self.assertEqual(tokens[0], Token(TokenType.BLOCK_BEGIN, "{%"))
+        self.assertEqual(tokens[1], Token(TokenType.NAME, "if"))
+        self.assertEqual(tokens[2], Token(TokenType.NAME, "True"))
+        self.assertEqual(tokens[3], Token(TokenType.BLOCK_END, "%}"))
+        self.assertEqual(tokens[4], Token(TokenType.DATA, "\nJohn Doe!\n"))
+        self.assertEqual(tokens[5], Token(TokenType.BLOCK_BEGIN, "{%"))
+        self.assertEqual(tokens[6], Token(TokenType.NAME, "endif"))
+        self.assertEqual(tokens[7], Token(TokenType.BLOCK_END, "%}"))
 
     def test_tokenize__newline(self):
         tmpl = Template("")

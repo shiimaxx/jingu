@@ -20,6 +20,8 @@ class Template(object):
     NAME_PATTERN = re.compile(r"[a-zA-Z_][a-zA-Z0-9_]*")
     VARIABLE_BEGIN_PATTERN = re.compile(r"{{")
     VARIABLE_END_PATTERN = re.compile(r"}}")
+    BLOCK_BEGIN_PATTERN = re.compile(r"{%")
+    BLOCK_END_PATTERN = re.compile(r"%}")
     LBRACKET_PATTERN = re.compile(r"\[")
     RBRACKET_PATTERN = re.compile(r"]")
     INTEGER_PATTERN = re.compile(r"[0-9]+")
@@ -60,6 +62,7 @@ class Template(object):
         text = ""
         tokens = []
         pos = 0
+        inner_block = False
 
         def skip_whitespace(pos):
             while True:
@@ -72,96 +75,18 @@ class Template(object):
 
         # tokenize
         while True:
-            m = self.VARIABLE_BEGIN_PATTERN.match(content, pos)
-            # variable block
+            m = self.VARIABLE_BEGIN_PATTERN.match(content, pos) or self.BLOCK_BEGIN_PATTERN.match(content, pos)
             if m:
                 # flush text
                 if len(text) > 0:
                     tokens.append(Token(TokenType.DATA, text))
                     text = ""
 
-                g = m.group()
-                tokens.append(Token(TokenType.VARIABLE_BEGIN, g))
-                pos = m.end()
-
-                pos = skip_whitespace(pos)
-
-                name_or_int_m = self.NAME_PATTERN.match(content, pos) or self.INTEGER_PATTERN.match(content, pos)
-                if name_or_int_m is None:
-                    raise SyntaxError()
-
-                if name_or_int_m.re is self.INTEGER_PATTERN:
-                    tokens.append(Token(TokenType.INTEGER, name_or_int_m.group()))
-                    pos = name_or_int_m.end()
-                elif name_or_int_m.re is self.NAME_PATTERN:
-                    tokens.append(Token(TokenType.NAME, name_or_int_m.group()))
-                    pos = name_or_int_m.end()
-                else:
-                    raise SyntaxError()
-
-                if name_or_int_m.re is self.NAME_PATTERN:
-                    lbracket_or_dot_m = self.LBRACKET_PATTERN.match(content, pos) or self.DOT_PATTERN.match(content, pos)
-                    if lbracket_or_dot_m:
-                        if lbracket_or_dot_m.re is self.LBRACKET_PATTERN:
-                            lbracket_m = lbracket_or_dot_m
-                            tokens.append(Token(TokenType.LBRACKET, lbracket_m.group()))
-                            pos = lbracket_m.end()
-
-                            int_or_str_m = self.INTEGER_PATTERN.match(content, pos) or self.STRING_PATTERN.match(content, pos)
-                            if int_or_str_m is None:
-                                raise SyntaxError()
-
-                            if int_or_str_m.re is self.INTEGER_PATTERN:
-                                tokens.append(Token(TokenType.INTEGER, int_or_str_m.group()))
-                            elif int_or_str_m.re is self.STRING_PATTERN:
-                                if int_or_str_m.group().startswith("'"):
-                                    s = int_or_str_m.group().strip("'")
-                                elif int_or_str_m.group().startswith('"'):
-                                    s = int_or_str_m.group().strip('"')
-                                tokens.append(Token(TokenType.STRING, s))
-                            else:
-                                raise SyntaxError()
-
-                            pos = int_or_str_m.end()
-
-                            rbracket_m = self.RBRACKET_PATTERN.match(content, pos)
-                            if rbracket_m is None:
-                                raise SyntaxError()
-                            tokens.append(Token(TokenType.RBRACKET, rbracket_m.group()))
-                            pos = rbracket_m.end()
-
-                        elif lbracket_or_dot_m.re is self.DOT_PATTERN:
-                            dot_m = lbracket_or_dot_m
-                            if dot_m is None:
-                                raise SyntaxError()
-                            tokens.append(Token(TokenType.DOT, dot_m.group()))
-                            pos = dot_m.end()
-
-                            str_m = self.NAME_PATTERN.match(content, pos)
-                            if str_m is None:
-                                raise SyntaxError()
-                            tokens.append(Token(TokenType.NAME, str_m.group()))
-                            pos = str_m.end()
-
-                pos = skip_whitespace(pos)
-
-                # calculate
-                while True:
-                    op_m = self._match_operators(content, pos)
-                    if op_m is None:
-                        break
-
-                    if op_m.re is self.ADD_PATTERN:
-                        tokens.append(Token(TokenType.ADD, op_m.group()))
-                    if op_m.re is self.SUB_PATTERN:
-                        tokens.append(Token(TokenType.SUB, op_m.group()))
-                    if op_m.re is self.MUL_PATTERN:
-                        tokens.append(Token(TokenType.MUL, op_m.group()))
-                    if op_m.re is self.DIV_PATTERN:
-                        tokens.append(Token(TokenType.DIV, op_m.group()))
-                    if op_m.re is self.MOD_PATTERN:
-                        tokens.append(Token(TokenType.MOD, op_m.group()))
-                    pos = op_m.end()
+                # variable block
+                if m.re is self.VARIABLE_BEGIN_PATTERN:
+                    g = m.group()
+                    tokens.append(Token(TokenType.VARIABLE_BEGIN, g))
+                    pos = m.end()
 
                     pos = skip_whitespace(pos)
 
@@ -175,6 +100,8 @@ class Template(object):
                     elif name_or_int_m.re is self.NAME_PATTERN:
                         tokens.append(Token(TokenType.NAME, name_or_int_m.group()))
                         pos = name_or_int_m.end()
+                    else:
+                        raise SyntaxError()
 
                     if name_or_int_m.re is self.NAME_PATTERN:
                         lbracket_or_dot_m = self.LBRACKET_PATTERN.match(content, pos) or self.DOT_PATTERN.match(content, pos)
@@ -219,22 +146,155 @@ class Template(object):
                                     raise SyntaxError()
                                 tokens.append(Token(TokenType.NAME, str_m.group()))
                                 pos = str_m.end()
+
                     pos = skip_whitespace(pos)
 
-                pos = skip_whitespace(pos)
+                    # calculate
+                    while True:
+                        op_m = self._match_operators(content, pos)
+                        if op_m is None:
+                            break
 
-                mmm = self.VARIABLE_END_PATTERN.match(content, pos)
-                if mmm is None:
-                    raise SyntaxError()
+                        if op_m.re is self.ADD_PATTERN:
+                            tokens.append(Token(TokenType.ADD, op_m.group()))
+                        if op_m.re is self.SUB_PATTERN:
+                            tokens.append(Token(TokenType.SUB, op_m.group()))
+                        if op_m.re is self.MUL_PATTERN:
+                            tokens.append(Token(TokenType.MUL, op_m.group()))
+                        if op_m.re is self.DIV_PATTERN:
+                            tokens.append(Token(TokenType.DIV, op_m.group()))
+                        if op_m.re is self.MOD_PATTERN:
+                            tokens.append(Token(TokenType.MOD, op_m.group()))
+                        pos = op_m.end()
 
-                g = mmm.group()
-                tokens.append(Token(TokenType.VARIABLE_END, g))
-                pos = mmm.end()
+                        pos = skip_whitespace(pos)
 
-                if pos >= len(content):
-                    break
+                        name_or_int_m = self.NAME_PATTERN.match(content, pos) or self.INTEGER_PATTERN.match(content, pos)
+                        if name_or_int_m is None:
+                            raise SyntaxError()
 
-                continue
+                        if name_or_int_m.re is self.INTEGER_PATTERN:
+                            tokens.append(Token(TokenType.INTEGER, name_or_int_m.group()))
+                            pos = name_or_int_m.end()
+                        elif name_or_int_m.re is self.NAME_PATTERN:
+                            tokens.append(Token(TokenType.NAME, name_or_int_m.group()))
+                            pos = name_or_int_m.end()
+
+                        if name_or_int_m.re is self.NAME_PATTERN:
+                            lbracket_or_dot_m = self.LBRACKET_PATTERN.match(content, pos) or self.DOT_PATTERN.match(content, pos)
+                            if lbracket_or_dot_m:
+                                if lbracket_or_dot_m.re is self.LBRACKET_PATTERN:
+                                    lbracket_m = lbracket_or_dot_m
+                                    tokens.append(Token(TokenType.LBRACKET, lbracket_m.group()))
+                                    pos = lbracket_m.end()
+
+                                    int_or_str_m = self.INTEGER_PATTERN.match(content, pos) or self.STRING_PATTERN.match(content, pos)
+                                    if int_or_str_m is None:
+                                        raise SyntaxError()
+
+                                    if int_or_str_m.re is self.INTEGER_PATTERN:
+                                        tokens.append(Token(TokenType.INTEGER, int_or_str_m.group()))
+                                    elif int_or_str_m.re is self.STRING_PATTERN:
+                                        if int_or_str_m.group().startswith("'"):
+                                            s = int_or_str_m.group().strip("'")
+                                        elif int_or_str_m.group().startswith('"'):
+                                            s = int_or_str_m.group().strip('"')
+                                        tokens.append(Token(TokenType.STRING, s))
+                                    else:
+                                        raise SyntaxError()
+
+                                    pos = int_or_str_m.end()
+
+                                    rbracket_m = self.RBRACKET_PATTERN.match(content, pos)
+                                    if rbracket_m is None:
+                                        raise SyntaxError()
+                                    tokens.append(Token(TokenType.RBRACKET, rbracket_m.group()))
+                                    pos = rbracket_m.end()
+
+                                elif lbracket_or_dot_m.re is self.DOT_PATTERN:
+                                    dot_m = lbracket_or_dot_m
+                                    if dot_m is None:
+                                        raise SyntaxError()
+                                    tokens.append(Token(TokenType.DOT, dot_m.group()))
+                                    pos = dot_m.end()
+
+                                    str_m = self.NAME_PATTERN.match(content, pos)
+                                    if str_m is None:
+                                        raise SyntaxError()
+                                    tokens.append(Token(TokenType.NAME, str_m.group()))
+                                    pos = str_m.end()
+                        pos = skip_whitespace(pos)
+
+                    pos = skip_whitespace(pos)
+
+                    mmm = self.VARIABLE_END_PATTERN.match(content, pos)
+                    if mmm is None:
+                        raise SyntaxError()
+
+                    g = mmm.group()
+                    tokens.append(Token(TokenType.VARIABLE_END, g))
+                    pos = mmm.end()
+
+                    if pos >= len(content):
+                        break
+
+                    continue
+
+                if m.re is self.BLOCK_BEGIN_PATTERN:
+                    g = m.group()
+                    tokens.append(Token(TokenType.BLOCK_BEGIN, g))
+                    pos = m.end()
+
+                    pos = skip_whitespace(pos)
+
+                    if not inner_block:
+                        name_m = self.NAME_PATTERN.match(content, pos)
+                        if name_m is None:
+                            raise SyntaxError()
+                        g = name_m.group()
+                        tokens.append(Token(TokenType.NAME, g))
+                        pos = name_m.end()
+
+                        pos = skip_whitespace(pos)
+
+                        name_or_int_m = self.NAME_PATTERN.match(content, pos) or self.INTEGER_PATTERN.match(content, pos)
+                        if name_or_int_m is None:
+                            raise SyntaxError()
+
+                        if name_or_int_m.re is self.INTEGER_PATTERN:
+                            tokens.append(Token(TokenType.INTEGER, name_or_int_m.group()))
+                            pos = name_or_int_m.end()
+                        elif name_or_int_m.re is self.NAME_PATTERN:
+                            tokens.append(Token(TokenType.NAME, name_or_int_m.group()))
+                            pos = name_or_int_m.end()
+                        else:
+                            raise SyntaxError()
+                    else:
+                        name_m = self.NAME_PATTERN.match(content, pos)
+                        if name_m is None:
+                            raise SyntaxError()
+                        g = name_m.group()
+                        tokens.append(Token(TokenType.NAME, g))
+                        pos = name_m.end()
+
+                        pos = skip_whitespace(pos)
+
+                    inner_block = not inner_block
+
+                    pos = skip_whitespace(pos)
+
+                    mmm = self.BLOCK_END_PATTERN.match(content, pos)
+                    if mmm is None:
+                        raise SyntaxError()
+
+                    g = mmm.group()
+                    tokens.append(Token(TokenType.BLOCK_END, g))
+                    pos = mmm.end()
+
+                    if pos >= len(content):
+                        break
+
+                    continue
 
             text += content[pos]
             pos += 1
@@ -345,6 +405,31 @@ class Template(object):
                         nodes.append(SkipNode(t.value))
                         break
 
+            elif t.token_type == TokenType.BLOCK_BEGIN:
+                i += 1
+                t = tokens[i]
+                if t.token_type == TokenType.NAME and t.value == "if":
+                    i += 1
+                    if tokens[i].token_type == TokenType.NAME:
+                        test = tokens[i].value
+
+                    i += 1
+                    if tokens[i].token_type == TokenType.BLOCK_END:
+                        if_node = IfNode(test)
+
+                    i += 1
+                    if tokens[i].token_type == TokenType.DATA:
+                        data = DataNode(tokens[i].value)
+
+                    i += 1
+                    if tokens[i].token_type == TokenType.BLOCK_BEGIN:
+                        i += 1
+                        if tokens[i].token_type == TokenType.NAME and tokens[i].value == "endif":
+                            i += 1
+                            if tokens[i].token_type == TokenType.BLOCK_END:
+                                if_node.body = data
+                                nodes.append(if_node)
+
             i += 1
             if i >= len(tokens):
                 break
@@ -367,6 +452,8 @@ class TokenType(Enum):
     MUL = 12
     DIV = 13
     MOD = 14
+    BLOCK_BEGIN = 15
+    BLOCK_END = 16
 
 
 class Token(object):
@@ -485,3 +572,17 @@ class CalcNode(Node):
             right = int(self.right.value)
 
         return f"    yield str({left} {self.op} {right})\n"
+
+
+class IfNode(Node):
+
+    def __init__(self, test, body=None):
+        self.test = test
+        self.body = body
+
+    def visit(self):
+        b = self.body._escape_newline()
+        return f"""
+    if {self.test}:
+        yield '{b}'
+"""
