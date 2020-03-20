@@ -21,14 +21,17 @@ class TokenType(Enum):
 
 
 class Token(object):
-    def __init__(self, token_type, value):
-        if token_type not in TokenType:
-            raise TypeError("token_type must be specified TokenType")
-        self.token_type = token_type
+    def __init__(self, type, value):
+        if type not in TokenType:
+            raise TypeError("type must be specified TokenType object")
+        self.type = type
         self.value = value
 
     def __eq__(self, value):
-        return self.token_type == value.token_type and self.value == value.value
+        return self.type == value.type and self.value == value.value
+
+    def __repr__(self):
+        return f"Token({self.type.name}, '{self.value}')"
 
 
 class Lexer(object):

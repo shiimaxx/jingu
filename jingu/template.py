@@ -313,36 +313,36 @@ class Template(object):
         i = 0
         while True:
             t = tokens[i]
-            if t.token_type == TokenType.DATA:
+            if t.type == TokenType.DATA:
                 nodes.append(DataNode(t.value))
-            elif t.token_type == TokenType.VARIABLE_BEGIN:
+            elif t.type == TokenType.VARIABLE_BEGIN:
                 nodes.append(SkipNode(t.value))
                 i += 1
 
                 while True:
                     t = tokens[i]
 
-                    if t.token_type == TokenType.NAME:
+                    if t.type == TokenType.NAME:
                         j = i + 1
-                        if tokens[j].token_type == TokenType.LBRACKET:
+                        if tokens[j].type == TokenType.LBRACKET:
                             j += 1
                             next_t = tokens[j]
-                            if next_t.token_type not in (TokenType.INTEGER, TokenType.STRING):
+                            if next_t.type not in (TokenType.INTEGER, TokenType.STRING):
                                 raise ParseError()
                             index = next_t.value
 
                             j += 1
                             next_t = tokens[j]
-                            if next_t.token_type != TokenType.RBRACKET:
+                            if next_t.type != TokenType.RBRACKET:
                                 raise ParseError()
                             nodes.append(GetNode(t.value, index))
                             j += 1
 
                             i = j
-                        elif tokens[j].token_type == TokenType.DOT:
+                        elif tokens[j].type == TokenType.DOT:
                             j += 1
                             next_t = tokens[j]
-                            if next_t.token_type != TokenType.NAME:
+                            if next_t.type != TokenType.NAME:
                                 raise ParseError()
                             index = next_t.value
                             nodes.append(GetNode(t.value, index))
@@ -352,40 +352,40 @@ class Template(object):
                         else:
                             nodes.append(NameNode(t.value))
                             i += 1
-                    elif t.token_type == TokenType.INTEGER:
+                    elif t.type == TokenType.INTEGER:
                         nodes.append(ConstNode(t.value))
                         i += 1
 
                     t = tokens[i]
 
-                    if t.token_type in [TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV, TokenType.MOD]:
+                    if t.type in [TokenType.ADD, TokenType.SUB, TokenType.MUL, TokenType.DIV, TokenType.MOD]:
                         left = nodes.pop()
                         op = t.value
 
                         right = None
                         i = i + 1
                         t = tokens[i]
-                        if t.token_type == TokenType.NAME:
+                        if t.type == TokenType.NAME:
                             j = i + 1
-                            if tokens[j].token_type == TokenType.LBRACKET:
+                            if tokens[j].type == TokenType.LBRACKET:
                                 j += 1
                                 next_t = tokens[j]
-                                if next_t.token_type not in (TokenType.INTEGER, TokenType.STRING):
+                                if next_t.type not in (TokenType.INTEGER, TokenType.STRING):
                                     raise ParseError()
                                 index = next_t.value
 
                                 j += 1
                                 next_t = tokens[j]
-                                if next_t.token_type != TokenType.RBRACKET:
+                                if next_t.type != TokenType.RBRACKET:
                                     raise ParseError()
                                 right = GetNode(t.value, index)
                                 j += 1
 
                                 i = j
-                            elif tokens[j].token_type == TokenType.DOT:
+                            elif tokens[j].type == TokenType.DOT:
                                 j += 1
                                 next_t = tokens[j]
-                                if next_t.token_type != TokenType.NAME:
+                                if next_t.type != TokenType.NAME:
                                     raise ParseError()
                                 index = next_t.value
                                 right = GetNode(t.value, index)
@@ -395,39 +395,39 @@ class Template(object):
                             else:
                                 right = NameNode(t.value)
                                 i += 1
-                        elif t.token_type == TokenType.INTEGER:
+                        elif t.type == TokenType.INTEGER:
                             right = ConstNode(t.value)
                             i += 1
 
                         nodes.append(CalcNode(op, left, right))
 
                     t = tokens[i]
-                    if t.token_type == TokenType.VARIABLE_END:
+                    if t.type == TokenType.VARIABLE_END:
                         nodes.append(SkipNode(t.value))
                         break
 
-            elif t.token_type == TokenType.BLOCK_BEGIN:
+            elif t.type == TokenType.BLOCK_BEGIN:
                 i += 1
                 t = tokens[i]
-                if t.token_type == TokenType.NAME and t.value == "if":
+                if t.type == TokenType.NAME and t.value == "if":
                     i += 1
-                    if tokens[i].token_type == TokenType.NAME:
+                    if tokens[i].type == TokenType.NAME:
                         test = tokens[i].value
 
                     i += 1
-                    if tokens[i].token_type == TokenType.BLOCK_END:
+                    if tokens[i].type == TokenType.BLOCK_END:
                         if_node = IfNode(test)
 
                     i += 1
-                    if tokens[i].token_type == TokenType.DATA:
+                    if tokens[i].type == TokenType.DATA:
                         data = DataNode(tokens[i].value)
 
                     i += 1
-                    if tokens[i].token_type == TokenType.BLOCK_BEGIN:
+                    if tokens[i].type == TokenType.BLOCK_BEGIN:
                         i += 1
-                        if tokens[i].token_type == TokenType.NAME and tokens[i].value == "endif":
+                        if tokens[i].type == TokenType.NAME and tokens[i].value == "endif":
                             i += 1
-                            if tokens[i].token_type == TokenType.BLOCK_END:
+                            if tokens[i].type == TokenType.BLOCK_END:
                                 if_node.body = data
                                 nodes.append(if_node)
 
