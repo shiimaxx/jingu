@@ -1,7 +1,8 @@
 from collections import namedtuple
 import unittest
 
-from jingu.template import Environment, Template, Token, TokenType, NameNode, DataNode, GetNode, RootNode, SkipNode, CalcNode, ConstNode
+from jingu.template import Environment, Template, NameNode, DataNode, GetNode, RootNode, SkipNode, CalcNode, ConstNode
+from jingu.lexer import Token, TokenType
 
 
 class TestEnvironment(unittest.TestCase):
