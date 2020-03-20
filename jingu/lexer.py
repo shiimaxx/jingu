@@ -22,7 +22,7 @@ class TokenType(Enum):
 
 class Token(object):
     def __init__(self, type, value):
-        if type not in TokenType:
+        if not isinstance(type, TokenType):
             raise TypeError("type must be specified TokenType object")
         self.type = type
         self.value = value
